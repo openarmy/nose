@@ -27,6 +27,7 @@ runs to ``exit(1)``).
 
 import sys
 import unittest
+import json
 
 from nose2 import events, result, util
 
@@ -45,6 +46,7 @@ class ResultReporter(events.Plugin):
         self.testsRun = 0
         self.reportCategories = {'failures': [],
                                  'errors': [],
+                                 'passed': [],
                                  'skipped': [],
                                  'expectedFailures': [],
                                  'unexpectedSuccesses': []}
@@ -188,11 +190,21 @@ class ResultReporter(events.Plugin):
             (run, run != 1 and "s" or "", reportEvent.stopTestEvent.timeTaken))
         stream.writeln(msg)
 
-        infos = []
+        # infos = []
+        test_results = {}
+#         var testResult = {
+#   failures: [],
+#   success: [],
+#   pending: [],
+#   started: false,
+#   finished: false
+# };
+
         extraInfos = []
         if reportEvent.stopTestEvent.result.wasSuccessful():
-            stream.write("OK")
+            test_results.update({'status': 'PASSED'})
         else:
+            test_results.update({'status': 'FAILED'})
             stream.write("FAILED")
 
         failed = len(reportEvent.reportCategories.get('failures', []))
@@ -211,18 +223,26 @@ class ResultReporter(events.Plugin):
                 extraInfos.append("%s=%d" % (flavour, count))
 
         if failed:
-            infos.append("failures=%d" % failed)
+            # infos.append("failures=%d" % failed)
+            test_results.update({'failures': failed})
         if errored:
-            infos.append("errors=%d" % errored)
+            # infos.append("errors=%d" % errored)
+            test_results.update({'errors': errored})
         if skipped:
-            infos.append("skipped=%d" % skipped)
+            # infos.append("skipped=%d" % skipped)
+            test_results.update({'skipped': skipped})
         if expectedFails:
-            infos.append("expected failures=%d" % expectedFails)
+            # infos.append("expected failures=%d" % expectedFails)
+            test_results.update({'expectedFailures': expectedFails})
         if unexpectedSuccesses:
-            infos.append("unexpected successes=%d" % unexpectedSuccesses)
-        infos.extend(extraInfos)
-        if infos:
-            reportEvent.stream.writeln(" (%s)" % (", ".join(infos),))
+            test_results.update({'unexpectedSuccesses': unexpectedSuccesses})
+            # infos.append("unexpected successes=%d" % unexpectedSuccesses)
+        # infos.extend(extraInfos)
+        if extraInfos:
+            test_results.update({'extraInfos': extraInfos})
+        if test_results:
+            # reportEvent.stream.writeln(" (%s)" % (", ".join(infos),))
+            reportEvent.stream.writeln(json.dumps(test_results))
         else:
             reportEvent.stream.writeln('')
 
